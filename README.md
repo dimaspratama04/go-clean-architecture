@@ -102,16 +102,7 @@ You can create a simple example like this:
 }
 ```
 
-**GET /api/v1/products**
-
-```json
-{
-  "status": "ok",
-  "message": "service is running"
-}
-```
-
-**POST /api/v1/products**
+**POST /api/products**
 
 ```json
 {

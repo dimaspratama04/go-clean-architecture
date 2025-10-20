@@ -48,7 +48,9 @@ func NewRabbitMQClient() *amqp091.Connection {
 
 	conn, err := amqp091.Dial(rabbitURL)
 	if err != nil {
-		log.Fatalf("❌ Failed to connect to RabbitMQ: %v", err)
+		log.Printf("❌ Failed to connect to RabbitMQ: %v", err)
+		log.Println("Continuing without RabbitMQ connection...")
+		return nil
 	}
 
 	log.Printf("✅ Connected to RabbitMQ at %s", rabbitURL)

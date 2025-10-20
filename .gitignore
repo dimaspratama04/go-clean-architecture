@@ -33,3 +33,4 @@ go.work.sum
 
 # conf files
 *.conf
+.Ds_Store
