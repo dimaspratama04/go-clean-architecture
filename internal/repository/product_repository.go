@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"golang-redis/internal/entity"
+	"log"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -67,6 +68,7 @@ func (p *ProductRepository) GetAll(ctx context.Context) ([]entity.Product, error
 	cached, err := p.RDB.Get(ctx, cacheKey).Result()
 	if err == nil && cached != "" {
 		if err := json.Unmarshal([]byte(cached), &products); err == nil {
+			log.Println("Cache HIT")
 			return products, nil
 		}
 	}

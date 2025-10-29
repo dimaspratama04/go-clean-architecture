@@ -1,6 +1,7 @@
 package route
 
 import (
+	"context"
 	"golang-redis/internal/delivery/http/controller"
 	"golang-redis/internal/usecase"
 
@@ -11,8 +12,8 @@ import (
 
 type RouteConfig struct {
 	App       *fiber.App
-	AuthUC    usecase.AuthUsecase
 	GuestUC   usecase.GuestUseCase
+	UsersUC   *usecase.UsersUseCase
 	ProductUC *usecase.ProductUseCase
 }
 
@@ -21,7 +22,7 @@ func (rc *RouteConfig) AuthMiddleware(c *fiber.Ctx) error {
 	if authHeader == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"status":  "error",
-			"message": "missing authorization header",
+			"message": "missing authorization header. ",
 		})
 	}
 
@@ -30,42 +31,44 @@ func (rc *RouteConfig) AuthMiddleware(c *fiber.Ctx) error {
 	if len(parts) != 2 || parts[0] != "Bearer" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"status":  "error",
-			"message": "invalid token format",
+			"message": "invalid token format.",
 		})
 	}
 
-	token := parts[1]
-	session, _ := rc.AuthUC.ValidateToken(token)
-	if session == nil {
+	bearerToken := parts[1]
+	claims, err := rc.UsersUC.ValidateJWT(context.Background(), bearerToken)
+	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"status":  "error",
 			"message": "invalid or expired token",
 		})
 	}
 
-	// simpan user id di context
-	c.Locals("userID", session.UserID)
+	// simpan user info ke context (misal userID)
+	c.Locals("userID", claims.ID)
+	c.Locals("email", claims.Email)
+	c.Locals("user_name", claims.Username)
+
 	return c.Next()
 }
 
 // Guest route (tidak butuh login)
 func (rc *RouteConfig) SetupGuestRoute() {
-
-	authController := controller.NewAuthController(rc.AuthUC)
+	usersController := controller.NewUsersController(rc.UsersUC)
 	guestController := controller.NewGuestController(rc.GuestUC)
 
 	rc.App.Get("/api/healthz", guestController.HealthCheck)
-	rc.App.Post("/api/users/login", authController.Login)
+	rc.App.Post("/api/users/login", usersController.Login)
+	rc.App.Post("/api/users/register", usersController.Register)
 }
 
 // Auth route (butuh login)
 func (rc *RouteConfig) SetupAuthRoute() {
-	authController := controller.NewAuthController(rc.AuthUC)
 	productController := controller.NewProductController(rc.ProductUC)
 
 	rc.App.Use(rc.AuthMiddleware)
 
-	rc.App.Post("/api/users/logout", authController.Logout)
+	// rc.App.Post("/api/users/logout", authController.Logout)
 	rc.App.Get("/api/products", productController.GetProducts)
 	rc.App.Post("/api/products", productController.CreateProduct)
 	rc.App.Get("/api/products/:id", productController.GetProductByID)

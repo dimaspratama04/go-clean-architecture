@@ -19,19 +19,18 @@ type BootstrapConfig struct {
 }
 
 func Bootstrap(config *BootstrapConfig) {
-	// setup repository
-	sessionRepository := repository.NewSessionRepository()
 	productRepository := repository.NewProductRepository(config.Db, config.Rdb)
+	usersRepository := repository.NewUsersRepository(config.Db)
 
 	// setup usecase
 	guestUC := usecase.NewGuestUsecase()
-	authUC := usecase.NewAuthUsecase(sessionRepository)
+	usersUC := usecase.NewUsersUseCase(usersRepository)
 	productUC := usecase.NewProductUseCase(productRepository)
 
 	// router config
 	rc := route.RouteConfig{
 		App:       config.App,
-		AuthUC:    authUC,
+		UsersUC:   usersUC,
 		GuestUC:   guestUC,
 		ProductUC: productUC}
 

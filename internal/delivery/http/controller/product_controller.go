@@ -60,7 +60,7 @@ func (pc *ProductController) GetProducts(c *fiber.Ctx) error {
 			})
 		}
 
-		return c.JSON(Response{
+		return c.JSON(response.Response{
 			Status:  "ok",
 			Message: "products filtered by category successfully.",
 			Data:    products,
@@ -77,7 +77,7 @@ func (pc *ProductController) GetProducts(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.JSON(Response{
+	return c.JSON(response.Response{
 		Status:  "ok",
 		Message: "all products fetched successfully.",
 		Data:    allProducts,
@@ -109,10 +109,10 @@ func (pc *ProductController) GetProductByID(c *fiber.Ctx) error {
 		Category: product.Category,
 	}
 
-	return c.JSON(Response{
-		Status:  "ok",
-		Message: "product successfully created",
-		Data:    response,
+	return c.JSON(fiber.Map{
+		"status":  "ok",
+		"message": "product successfully created",
+		"data":    response,
 	})
 }
 
@@ -142,11 +142,11 @@ func (pc *ProductController) CreateProduct(c *fiber.Ctx) error {
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"status":  "error",
-				"message": err.Error(),
+				"message": "ups, something wrong",
 			})
 		}
 
-		return c.JSON(Response{
+		return c.JSON(response.Response{
 			Status:  "ok",
 			Message: "product successfully created",
 			Data:    products,
@@ -173,20 +173,13 @@ func (pc *ProductController) CreateProduct(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"status":  "error",
-			"message": err.Error(),
+			"message": "ups, something wrong",
 		})
 	}
 
-	response := response.ProductResponse{
-		ID:       uint64(product.ID),
-		Name:     product.Name,
-		Price:    product.Price,
-		Category: product.Category,
-	}
-
-	return c.JSON(Response{
+	return c.JSON(response.Response{
 		Status:  "ok",
 		Message: "product successfully created",
-		Data:    response,
+		Data:    product,
 	})
 }
