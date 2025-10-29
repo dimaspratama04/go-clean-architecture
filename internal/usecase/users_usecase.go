@@ -68,10 +68,10 @@ func (uc *UsersUseCase) Login(ctx context.Context, email string) (string, *entit
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":    user.ID,
-		"name":  user.Username,
-		"email": user.Email,
-		"exp":   time.Now().Add(24 * time.Hour).Unix(),
+		"id":       user.ID,
+		"username": user.Username,
+		"email":    user.Email,
+		"exp":      time.Now().Add(24 * time.Hour).Unix(),
 	})
 
 	tokenString, err := token.SignedString(uc.JWTKey)
