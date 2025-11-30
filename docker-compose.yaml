@@ -1,4 +1,19 @@
 services:
+  api:
+    container_name: api-clean-architecture
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 3001:3000
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - api-networks
+    env_file:
+      - .env
+
   mysql:
     container_name: mysql
     image: mysql:8.0
@@ -8,6 +23,8 @@ services:
       - MYSQL_ROOT_PASSWORD=superuser
     volumes:
       - data_mysql:/var/lib/mysql
+    networks:
+      - api-networks
 
   redis:
     container_name: redis
@@ -25,6 +42,12 @@ services:
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
     command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - api-networks
 
 volumes:
   data_mysql:
+
+networks:
+  api-networks:
+    driver: bridge
