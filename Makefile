@@ -1,5 +1,5 @@
-run-api-local:
+run-local:
 	go run cmd/web/main.go
 
-run-with-docker: 
+run-docker: 
 	docker-compose up --build
