@@ -28,35 +28,41 @@ func (p *ProductRepository) Create(ctx context.Context, name string, price float
 	}
 
 	// delete cache if already insert new product
-	_ = p.RDB.Del(ctx, "products:all").Err()
+	if p.RDB != nil {
+		_ = p.RDB.Del(ctx, "products:all").Err()
 
-	// delete cache by category
-	cacheKeyByCategory := "products:type:" + category
-	_ = p.RDB.Del(ctx, cacheKeyByCategory).Err()
+		// delete cache by category
+		cacheKeyByCategory := "products:type:" + category
+		_ = p.RDB.Del(ctx, cacheKeyByCategory).Err()
+	}
 
+	log.Println("Redis not connected, skipping...")
 	return product, nil
 }
 
 func (p *ProductRepository) CreateBatch(ctx context.Context, products []entity.Product) error {
 	// delete cache if already insert single product
-	_ = p.RDB.Del(ctx, "products:all").Err()
+	if p.RDB != nil {
+		_ = p.RDB.Del(ctx, "products:all").Err()
 
-	// delete cache by category
-	uniqueCategories := make(map[string]struct{})
-	for _, product := range products {
-		uniqueCategories[product.Category] = struct{}{}
+		// delete cache by category
+		uniqueCategories := make(map[string]struct{})
+		for _, product := range products {
+			uniqueCategories[product.Category] = struct{}{}
+		}
+
+		var keysToDelete []string
+		for category := range uniqueCategories {
+			cacheKey := "products:type:" + category
+			keysToDelete = append(keysToDelete, cacheKey)
+		}
+
+		if len(keysToDelete) > 0 {
+			_ = p.RDB.Del(ctx, keysToDelete...).Err()
+		}
 	}
 
-	var keysToDelete []string
-	for category := range uniqueCategories {
-		cacheKey := "products:type:" + category
-		keysToDelete = append(keysToDelete, cacheKey)
-	}
-
-	if len(keysToDelete) > 0 {
-		_ = p.RDB.Del(ctx, keysToDelete...).Err()
-	}
-
+	log.Println("Redis not connected, skipping...")
 	return p.DB.Create(&products).Error
 }
 
@@ -65,46 +71,57 @@ func (p *ProductRepository) GetAll(ctx context.Context) ([]entity.Product, error
 	cacheKey := "products:all"
 
 	// check cache from redis
-	cached, err := p.RDB.Get(ctx, cacheKey).Result()
-	if err == nil && cached != "" {
-		if err := json.Unmarshal([]byte(cached), &products); err == nil {
-			log.Println("Cache HIT")
-			return products, nil
+	if p.RDB != nil {
+		cached, err := p.RDB.Get(ctx, cacheKey).Result()
+		if err == nil && cached != "" {
+			if err := json.Unmarshal([]byte(cached), &products); err == nil {
+				log.Println("Cache HIT")
+				return products, nil
+			}
 		}
 	}
 
 	// check to database
+	log.Println("Redis not connected, skipping...")
 	if err := p.DB.Find(&products).Error; err != nil {
 		return nil, err
 	}
 
 	// store to redis 1 hour
-	jsonData, _ := json.Marshal(products)
-	p.RDB.Set(ctx, cacheKey, jsonData, 1*time.Hour)
+	if p.RDB != nil {
+		jsonData, _ := json.Marshal(products)
+		p.RDB.Set(ctx, cacheKey, jsonData, 1*time.Hour)
+	}
 
 	return products, nil
 }
 
 func (p *ProductRepository) GetByID(ctx context.Context, id int) (*entity.Product, error) {
 	var product entity.Product
+	cacheKeyProductId := fmt.Sprintf("product:%d", id)
 
 	// check to redis
-	cacheKeyProductId := fmt.Sprintf("product:%d", id)
-	val, err := p.RDB.Get(ctx, cacheKeyProductId).Result()
-	if err == nil {
-		if err := json.Unmarshal([]byte(val), &product); err == nil {
-			return &product, nil
+	if p.RDB != nil {
+		val, err := p.RDB.Get(ctx, cacheKeyProductId).Result()
+		if err == nil {
+			if err := json.Unmarshal([]byte(val), &product); err == nil {
+				return &product, nil
+			}
 		}
 	}
 
 	// check to database
+	log.Println("Redis not connected, skipping...")
 	if err := p.DB.Where("id = ?", id).First(&product).Error; err != nil {
 		return nil, err
 	}
 
 	// store to redis
-	data, _ := json.Marshal(product)
-	p.RDB.Set(ctx, cacheKeyProductId, data, 1*time.Hour)
+	if p.RDB != nil {
+		data, _ := json.Marshal(product)
+		p.RDB.Set(ctx, cacheKeyProductId, data, 1*time.Hour)
+	}
+
 	return &product, nil
 }
 
@@ -113,21 +130,26 @@ func (p *ProductRepository) GetByCategory(ctx context.Context, productType strin
 	cacheKey := fmt.Sprintf("products:type:%s", productType)
 
 	// cek cache redis
-	cached, err := p.RDB.Get(ctx, cacheKey).Result()
-	if err == nil && cached != "" {
-		if err := json.Unmarshal([]byte(cached), &products); err == nil {
-			return products, nil
+	if p.RDB != nil {
+		cached, err := p.RDB.Get(ctx, cacheKey).Result()
+		if err == nil && cached != "" {
+			if err := json.Unmarshal([]byte(cached), &products); err == nil {
+				return products, nil
+			}
 		}
 	}
 
 	// get from db
+	log.Println("Redis not connected, skipping...")
 	if err := p.DB.Where("category = ?", productType).Find(&products).Error; err != nil {
 		return nil, err
 	}
 
 	// simpan ke redis selama 1 jam
-	jsonData, _ := json.Marshal(products)
-	p.RDB.Set(ctx, cacheKey, jsonData, 1*time.Hour)
+	if p.RDB != nil {
+		jsonData, _ := json.Marshal(products)
+		p.RDB.Set(ctx, cacheKey, jsonData, 1*time.Hour)
+	}
 
 	return products, nil
 }

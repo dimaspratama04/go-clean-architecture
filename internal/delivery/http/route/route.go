@@ -72,5 +72,4 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/products", productController.GetProducts)
 	rc.App.Post("/api/products", productController.CreateProduct)
 	rc.App.Get("/api/products/:id", productController.GetProductByID)
-	// rc.App.Get("/api/products", productController.GetProductByCategory)
 }

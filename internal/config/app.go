@@ -20,7 +20,7 @@ type BootstrapConfig struct {
 
 func Bootstrap(config *BootstrapConfig) {
 	productRepository := repository.NewProductRepository(config.Db, config.Rdb)
-	usersRepository := repository.NewUsersRepository(config.Db)
+	usersRepository := repository.NewUsersRepository(config.Db, config.Rdb)
 
 	// setup usecase
 	guestUC := usecase.NewGuestUsecase()

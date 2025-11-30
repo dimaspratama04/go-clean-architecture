@@ -86,12 +86,22 @@ func (uc *ProductUseCase) GetProductByID(ctx context.Context, id int) (*entity.P
 
 }
 
-func (uc *ProductUseCase) GetProductByCategory(ctx context.Context, productCategory string) ([]entity.Product, error) {
+func (uc *ProductUseCase) GetProductByCategory(ctx context.Context, productCategory string) ([]response.ProductResponse, error) {
 	products, err := uc.Repository.GetByCategory(ctx, productCategory)
 	if err != nil {
 		return nil, err
 	}
 
-	return products, nil
+	var result []response.ProductResponse
+	for _, p := range products {
+		result = append(result, response.ProductResponse{
+			ID:       uint64(p.ID),
+			Name:     p.Name,
+			Price:    p.Price,
+			Category: p.Category,
+		})
+	}
+
+	return result, nil
 
 }
